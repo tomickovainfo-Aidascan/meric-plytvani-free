@@ -389,8 +389,11 @@ footer{background:#0a0a0a;padding:18px 20px;display:flex;justify-content:space-b
 
   <div class="email-box" id="email-box">
     <div class="email-box-title">Chcete si tenhle výsledek uložit?</div>
-    <form id="email-form" onsubmit="return odeslatEmail(event)">
+    <iframe name="brevo-target-frame" style="display:none;" title="odeslani formulare"></iframe>
+    <form id="email-form" action="https://2f524664.sibforms.com/serve/MUIFAFB3FTaqaMZ49xXeYzNHlP3i4C3GD_gfzxg8GVIDzxmq2oJQ7rAaHdCyUB3SC_ip0444hWrazJrC1GD5ffA3DaD7RSdo8nxkwG6lSavX0lmmrbhcs0WT3DCCe-CTsnH4VO9f9vaf_mCSYlJ4hlSizwazavsJ8ElGMBzk0OLh9WcAOqbR2w3opLCGTCsWxmXIEs_40Y_AjkUP_Q==" method="POST" target="brevo-target-frame" onsubmit="return odeslatEmail(event)">
       <input type="email" id="inp-email" name="EMAIL" placeholder="vas@email.cz" required>
+      <input type="hidden" name="email_address_check" value="">
+      <input type="hidden" name="locale" value="en">
       <button type="submit">Chci to e-mailem</button>
     </form>
     <div class="email-ok" id="email-ok" style="display:none;">Díky, posíláme vám to na e-mail.</div>
@@ -430,8 +433,6 @@ const PLYTVANI = ['presun','hledani','cekani','papiry','priprava','kontrola'];
 const MAX_CYKLY = 3;
 const HODINOVA_SAZBA = 250;
 
-// DOPLŇ SEM URL FORMULÁŘE Z BREVO (Kontakty > Formuláře > vytvořit > zkopírovat action URL)
-const BREVO_FORM_URL = 'DOPLN_SEM_URL_Z_BREVO_FORMULARE';
 
 let nazev = '';
 let cykly = [], aktCyklus = null, aktivniKat = null;
@@ -649,20 +650,12 @@ function ukoncit() {
 }
 
 function odeslatEmail(e) {
-  e.preventDefault();
   const email = document.getElementById('inp-email').value.trim();
-  if (!email) return false;
-  if (BREVO_FORM_URL.indexOf('DOPLN_SEM') === -1) {
-    const data = new FormData();
-    data.append('EMAIL', email);
-    data.append('SOURCE', 'mericplytvanifree');
-    data.append('PROCES', nazev);
-    fetch(BREVO_FORM_URL, { method: 'POST', mode: 'no-cors', body: data }).catch(function(){});
-  }
+  if (!email) { e.preventDefault(); return false; }
   document.getElementById('email-form').style.display = 'none';
   document.getElementById('email-ok').style.display = 'block';
   if (typeof gtag === 'function') { gtag('event', 'lead_email_submit', { source: 'meric_plytvani_free' }); }
-  return false;
+  return true;
 }
 
 function zacitZnovu() {
