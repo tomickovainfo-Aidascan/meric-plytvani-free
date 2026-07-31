@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="canonical" href="https://meric-plytvani-free.gabrielatomickova.cz/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link rel="canonical" href="https://meric-plytvani-free.gabrielatomickova.cz/">  
+<link rel="canonical" href="https://meric-plytvani-free.gabrielatomickova.cz/">
 <title>Měřič plýtvání - časová studie výroby zdarma | Gabriela Tomíčková</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -164,6 +164,17 @@ nav{background:var(--white);border-bottom:2px solid var(--gold);padding:12px 20p
 .g-bar{height:100%;border-radius:3px;}
 .g-val{font-family:"DM Mono",monospace;font-size:10px;color:var(--mid);width:65px;text-align:right;flex-shrink:0;}
 
+.email-box{background:var(--gold-light);border:1px solid rgba(233,169,27,.3);border-radius:10px;padding:16px;margin-bottom:12px;}
+.email-box-title{font-family:"Poppins",sans-serif;font-size:14px;font-weight:800;color:var(--dark);margin-bottom:4px;}
+.email-box-text{font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:10px;}
+.email-box form{display:flex;gap:8px;flex-wrap:wrap;}
+.email-box input[type="email"]{flex:1;min-width:150px;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:"DM Sans",sans-serif;font-size:13px;outline:none;background:white;}
+.email-box input[type="email"]:focus{border-color:var(--gold);}
+.email-box button{background:var(--gold);color:var(--black);border:none;border-radius:6px;padding:10px 18px;font-family:"Poppins",sans-serif;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;}
+.email-box button:hover{background:var(--gold-dark);color:white;}
+.email-box-note{font-size:10px;color:var(--light);margin-top:6px;}
+.email-ok{font-size:13px;color:var(--dark);font-weight:600;}
+
 .insight-box{border-radius:10px;padding:12px 14px;margin-bottom:10px;}
 .insight-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;}
 .insight-text{font-size:13px;line-height:1.7;color:var(--mid);}
@@ -316,17 +327,16 @@ footer{background:#0a0a0a;padding:18px 20px;display:flex;justify-content:space-b
   </div>
 
   <div class="instrukce">
-    <strong>Jak měřit:</strong> Klikněte na tlačítko vždy na <strong>začátku</strong> dané činnosti. Aplikace automaticky ukončí předchozí a začne měřit novou. Až cyklus skončí, klikněte STOP.
+    <strong>Jak měřit:</strong> Klikněte na tlačítko vždy na <strong>začátku</strong> dané činnosti. Časomíra se spustí prvním kliknutím. Aplikace automaticky ukončí předchozí činnost a začne měřit novou. Až cyklus skončí, klikněte STOP.
   </div>
 
   <div class="timer-box">
     <div class="timer-lbl">Čas cyklu</div>
     <div class="timer" id="timer">00:00</div>
-    <div class="timer-kat" id="timer-kat">Čeká na START</div>
-    <button class="timer-start" id="btn-start" onclick="startMereni()">START - spustit měření</button>
+    <div class="timer-kat" id="timer-kat">Klikněte na první činnost</div>
   </div>
 
-  <div id="tlacitka-wrap" style="display:none;">
+  <div id="tlacitka-wrap">
     <div class="kat-sekce-title">Klikněte na začátku každé činnosti</div>
     <div class="kat-grid">
       <button class="kat-btn k-prace" onclick="setKat('prace','Práce','#2a7a4f')">
@@ -376,6 +386,16 @@ footer{background:#0a0a0a;padding:18px 20px;display:flex;justify-content:space-b
 
   <div class="tbl-wrap"><table class="tbl" id="tbl"></table></div>
   <div class="graf-wrap"><div class="graf-title">Průměrné rozložení času</div><div id="graf"></div></div>
+
+  <div class="email-box" id="email-box">
+    <div class="email-box-title">Chcete si tenhle výsledek uložit?</div>
+    <form id="email-form" onsubmit="return odeslatEmail(event)">
+      <input type="email" id="inp-email" name="EMAIL" placeholder="vas@email.cz" required>
+      <button type="submit">Chci to e-mailem</button>
+    </form>
+    <div class="email-ok" id="email-ok" style="display:none;">Díky, posíláme vám to na e-mail.</div>
+  </div>
+
   <div id="plyvani"></div>
   <div id="insights"></div>
 
@@ -410,6 +430,9 @@ const PLYTVANI = ['presun','hledani','cekani','papiry','priprava','kontrola'];
 const MAX_CYKLY = 3;
 const HODINOVA_SAZBA = 250;
 
+// DOPLŇ SEM URL FORMULÁŘE Z BREVO (Kontakty > Formuláře > vytvořit > zkopírovat action URL)
+const BREVO_FORM_URL = 'DOPLN_SEM_URL_Z_BREVO_FORMULARE';
+
 let nazev = '';
 let cykly = [], aktCyklus = null, aktivniKat = null;
 let timerInt = null, katInt = null, cyklusStart = null;
@@ -426,24 +449,19 @@ function prejitKMereni() {
   document.getElementById('mereni').style.display = 'block';
   document.getElementById('m-nazev').textContent = nazev;
   document.getElementById('m-cykly').textContent = 'Cyklus 1 / ' + MAX_CYKLY;
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-function startMereni() {
   mereniSpusteno = true;
-  document.getElementById('btn-start').style.display = 'none';
-  document.getElementById('tlacitka-wrap').style.display = 'block';
-  document.getElementById('timer-kat').textContent = 'Vyberte činnost';
-  document.getElementById('timer-kat').style.background = 'var(--light)';
   zacitNovyCyklus();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function zacitNovyCyklus() {
   const cas = {};
   KAT.forEach(k => cas[k] = 0);
-  aktCyklus = {start: Date.now(), cas, celkem: 0};
+  aktCyklus = {start: null, cas, celkem: 0};
   aktivniKat = null;
-  cyklusStart = Date.now();
+  cyklusStart = null;
+  clearInterval(timerInt);
+  clearInterval(katInt);
   KAT.forEach(k => {
     const el = document.getElementById('k-'+k);
     if (el) el.textContent = '0:00';
@@ -453,14 +471,21 @@ function zacitNovyCyklus() {
   document.getElementById('btn-novy').style.display = 'none';
   document.getElementById('btn-konec').style.display = 'none';
   document.getElementById('m-cykly').textContent = 'Cyklus ' + (cykly.length + 1) + ' / ' + MAX_CYKLY;
-  clearInterval(timerInt);
-  timerInt = setInterval(updateTimer, 100);
-  clearInterval(katInt);
-  katInt = setInterval(updateKat, 100);
+  document.getElementById('timer').textContent = '00:00';
+  document.getElementById('timer').style.color = 'var(--dark)';
+  document.getElementById('timer-kat').textContent = 'Klikněte na první činnost';
+  document.getElementById('timer-kat').style.background = 'var(--light)';
 }
 
 function setKat(kat, nazevKat, barva) {
   if (!aktCyklus || !mereniSpusteno) return;
+  if (!cyklusStart) {
+    cyklusStart = Date.now();
+    clearInterval(timerInt);
+    timerInt = setInterval(updateTimer, 100);
+    clearInterval(katInt);
+    katInt = setInterval(updateKat, 100);
+  }
   document.querySelectorAll('.kat-btn').forEach(b => b.classList.remove('on'));
   const btn = document.querySelector('.k-'+kat);
   if (btn) btn.classList.add('on');
@@ -485,6 +510,10 @@ function updateKat() {
 }
 
 function stopCyklus() {
+  if (!cyklusStart) {
+    alert('Nejdřív klikněte na některou činnost, pak můžete cyklus ukončit.');
+    return;
+  }
   clearInterval(timerInt); clearInterval(katInt);
   document.querySelectorAll('.kat-btn').forEach(b => b.classList.remove('on'));
   aktivniKat = null;
@@ -619,17 +648,35 @@ function ukoncit() {
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+function odeslatEmail(e) {
+  e.preventDefault();
+  const email = document.getElementById('inp-email').value.trim();
+  if (!email) return false;
+  if (BREVO_FORM_URL.indexOf('DOPLN_SEM') === -1) {
+    const data = new FormData();
+    data.append('EMAIL', email);
+    data.append('SOURCE', 'mericplytvanifree');
+    data.append('PROCES', nazev);
+    fetch(BREVO_FORM_URL, { method: 'POST', mode: 'no-cors', body: data }).catch(function(){});
+  }
+  document.getElementById('email-form').style.display = 'none';
+  document.getElementById('email-ok').style.display = 'block';
+  if (typeof gtag === 'function') { gtag('event', 'lead_email_submit', { source: 'meric_plytvani_free' }); }
+  return false;
+}
+
 function zacitZnovu() {
   cykly = []; aktCyklus = null; aktivniKat = null; mereniSpusteno = false;
   document.getElementById('uloz-list').innerHTML = '';
   document.getElementById('souhrn').style.display = 'none';
   document.getElementById('setup').style.display = 'block';
-  document.getElementById('btn-start').style.display = 'block';
-  document.getElementById('tlacitka-wrap').style.display = 'none';
   document.getElementById('timer').textContent = '00:00';
   document.getElementById('timer').style.color = 'var(--dark)';
-  document.getElementById('timer-kat').textContent = 'Čeká na START';
+  document.getElementById('timer-kat').textContent = 'Klikněte na první činnost';
   document.getElementById('timer-kat').style.background = 'var(--light)';
+  document.getElementById('email-form').style.display = 'flex';
+  document.getElementById('email-ok').style.display = 'none';
+  document.getElementById('inp-email').value = '';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
